@@ -1,5 +1,9 @@
 # Repository Guidelines
 
+## Instrucciones Generales
+Nunca modificar la base de datos directamente. Debes hacerlo a traves de comandos de EF Core,
+como crear una migracion y actualizar la base de datos via dicha migracion
+
 ## Project Structure & Architecture
 
 `CitasMedicas.slnx` contains the .NET 10 solution. The MVC application lives in
