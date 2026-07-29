@@ -11,4 +11,6 @@ public class Doctor
     public int SpecialtyId { get; set; }
 
     public Specialty Specialty { get; set; } = null!;
+
+    public ICollection<DoctorAvailability> Availabilities { get; set; } = [];
 }

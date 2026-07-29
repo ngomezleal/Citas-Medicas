@@ -10,6 +10,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<Specialty> Specialties => Set<Specialty>();
 
+    public DbSet<DoctorAvailability> DoctorAvailabilities => Set<DoctorAvailability>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Doctor>(entity =>
@@ -22,6 +24,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(doctor => doctor.SpecialtyId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(doctor => doctor.Availabilities)
+                .WithOne(availability => availability.Doctor)
+                .HasForeignKey(availability => availability.DoctorId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DoctorAvailability>(entity =>
+        {
+            entity.ToTable("DoctorAvailabilities");
+            entity.HasKey(availability => availability.Id);
+            entity.Property(availability => availability.DayOfWeek).IsRequired();
+            entity.Property(availability => availability.StartTime).HasColumnType("time").IsRequired();
+            entity.Property(availability => availability.EndTime).HasColumnType("time").IsRequired();
+            entity.HasIndex(availability => new { availability.DoctorId, availability.DayOfWeek }).IsUnique();
         });
 
         modelBuilder.Entity<Specialty>(entity =>
