@@ -1,0 +1,26 @@
+@model CitasMedicas.Web.Modules.Doctors.ConfigureAvailability.ConfigureAvailabilityViewModel
+@{
+    ViewData["Title"] = "Configurar horarios";
+    var dayNames = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes" };
+}
+
+<div class="row"><div class="col-lg-8">
+    <h1 class="h2">Configurar horarios</h1>
+    <p class="text-muted">@Model.Doctor.FullName — @Model.Doctor.Specialty.Name</p>
+    @if (TempData["SuccessMessage"] is string successMessage) { <div class="alert alert-success" role="alert">@successMessage</div> }
+    <form asp-action="Save" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+        <input asp-for="Availability.DoctorId" type="hidden" />
+        <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Día</th><th>Disponible</th><th>Hora de inicio</th><th>Hora de fin</th></tr></thead><tbody>
+        @for (var index = 0; index < Model.Availability.Days.Count; index++)
+        {
+            <tr><td>@dayNames[index]<input asp-for="Availability.Days[index].DayOfWeek" type="hidden" /></td>
+            <td><input asp-for="Availability.Days[index].IsAvailable" class="form-check-input" /></td>
+            <td><input asp-for="Availability.Days[index].StartTime" class="form-control" type="time" /></td>
+            <td><input asp-for="Availability.Days[index].EndTime" class="form-control" type="time" /></td></tr>
+        }
+        </tbody></table></div>
+        <button type="submit" class="btn btn-primary">Guardar horarios</button>
+        <a asp-controller="Doctors" asp-action="Index" class="btn btn-outline-secondary">Volver a médicos</a>
+    </form>
+</div></div>
