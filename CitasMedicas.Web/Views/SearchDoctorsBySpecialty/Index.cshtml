@@ -1,0 +1,55 @@
+@model CitasMedicas.Web.Modules.Doctors.SearchDoctorsBySpecialty.SearchDoctorsBySpecialtyViewModel
+
+@{
+    ViewData["Title"] = "Buscar médicos";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <h1 class="h2">Buscar médicos</h1>
+        <p class="text-muted">Seleccione una especialidad para consultar los médicos disponibles.</p>
+
+        <form method="get">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label for="specialtyId" class="form-label">Especialidad</label>
+                <select id="specialtyId" name="specialtyId" class="form-select">
+                    <option value="">Seleccione una especialidad</option>
+                    @foreach (var specialty in Model.Specialties)
+                    {
+                        if (specialty.Id == Model.SelectedSpecialtyId)
+                        {
+                            <option value="@specialty.Id" selected>@specialty.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@specialty.Id">@specialty.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Buscar</button>
+        </form>
+    </div>
+
+    <div class="col-lg-7">
+        <h2 class="h2">Resultados</h2>
+
+        @if (Model.SelectedSpecialtyId.HasValue && Model.Doctors.Count == 0 && ViewData.ModelState.IsValid)
+        {
+            <p class="text-muted">No hay médicos disponibles para la especialidad seleccionada.</p>
+        }
+        else if (Model.Doctors.Count > 0)
+        {
+            <ul class="list-group">
+                @foreach (var doctor in Model.Doctors)
+                {
+                    <li class="list-group-item">
+                        <span class="fw-semibold">@doctor.FullName</span>
+                        <span class="text-muted">— @doctor.Specialty.Name</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

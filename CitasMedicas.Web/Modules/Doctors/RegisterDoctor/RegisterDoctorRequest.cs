@@ -8,4 +8,8 @@ public class RegisterDoctorRequest
     [Required(ErrorMessage = "El nombre completo del médico es obligatorio.")]
     [StringLength(200, ErrorMessage = "El nombre completo no puede superar los 200 caracteres.")]
     public string FullName { get; set; } = string.Empty;
+
+    [Display(Name = "Especialidad")]
+    [Range(1, int.MaxValue, ErrorMessage = "La especialidad del médico es obligatoria.")]
+    public int SpecialtyId { get; set; }
 }
