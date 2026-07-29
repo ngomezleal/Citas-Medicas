@@ -56,3 +56,16 @@ file`). Keep commits focused and phrased the same way. Pull requests should expl
 the user-story impact, list validation performed, link the relevant issue when one
 exists, and include screenshots for UI changes. Preserve unrelated working-tree
 changes.
+
+## Git Workflow
+
+- El repositorio de Github de este proyecto es: `ngomezleal/Citas-Medicas`
+- Nunca trabajes directamente sobre `main`
+- Antes de implementar cualquier feature, bugfix o issue, verifica la rama actual.
+- Si la rama actual es `main`, crea una nueva antes de realizar cambios.
+- Usa nombres descriptivos:
+    - feature/<description>
+    - fix/<description>
+    - refactor/<description>
+- Realiza todos los commit en la nueva rama.
+- Nunca hagas push directo a `main`
