@@ -1,0 +1,49 @@
+@model CitasMedicas.Web.Modules.Doctors.RegisterDoctor.DoctorsIndexViewModel
+
+@{
+    ViewData["Title"] = "Médicos";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <h1 class="h2">Registrar médico</h1>
+        <p class="text-muted">Registre al médico para poder asociarle una especialidad posteriormente.</p>
+
+        <form asp-action="Create" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div class="mb-3">
+                <label asp-for="NewDoctor.FullName" class="form-label"></label>
+                <input asp-for="NewDoctor.FullName" class="form-control" autocomplete="name" />
+                <span asp-validation-for="NewDoctor.FullName" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Registrar médico</button>
+        </form>
+    </div>
+
+    <div class="col-lg-7">
+        <h2 class="h2">Médicos registrados</h2>
+
+        @if (TempData["SuccessMessage"] is string successMessage)
+        {
+            <div class="alert alert-success" role="alert">@successMessage</div>
+        }
+
+        @if (Model.Doctors.Count == 0)
+        {
+            <p class="text-muted">Aún no hay médicos registrados.</p>
+        }
+        else
+        {
+            <ul class="list-group">
+                @foreach (var doctor in Model.Doctors)
+                {
+                    <li class="list-group-item">@doctor.FullName</li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
