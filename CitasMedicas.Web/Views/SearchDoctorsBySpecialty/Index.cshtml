@@ -46,6 +46,7 @@
                 {
                     <li class="list-group-item">
                         <span class="fw-semibold">@doctor.FullName</span>
+                        <a asp-controller="ViewDoctorAvailability" asp-action="Index" asp-route-doctorId="@doctor.Id" class="btn btn-sm btn-outline-primary float-end">Consultar horarios</a>
                         <span class="text-muted">— @doctor.Specialty.Name</span>
                     </li>
                 }
