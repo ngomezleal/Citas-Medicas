@@ -1,0 +1,51 @@
+@model CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability.ViewDoctorAvailabilityViewModel
+
+@{
+    ViewData["Title"] = "Horarios disponibles";
+    var dayNames = new Dictionary<DayOfWeek, string>
+    {
+        [DayOfWeek.Monday] = "Lunes",
+        [DayOfWeek.Tuesday] = "Martes",
+        [DayOfWeek.Wednesday] = "Miércoles",
+        [DayOfWeek.Thursday] = "Jueves",
+        [DayOfWeek.Friday] = "Viernes"
+    };
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <h1 class="h2">Horarios disponibles</h1>
+        <p class="text-muted">@Model.DoctorFullName — @Model.SpecialtyName</p>
+
+        @if (Model.Availabilities.Count == 0)
+        {
+            <p class="text-muted">Este médico no tiene horarios disponibles configurados.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Día</th>
+                            <th>Hora de inicio</th>
+                            <th>Hora de fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var availability in Model.Availabilities)
+                        {
+                            <tr>
+                                <td>@dayNames[availability.DayOfWeek]</td>
+                                <td>@availability.StartTime.ToString("HH:mm")</td>
+                                <td>@availability.EndTime.ToString("HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary">Volver a la búsqueda</a>
+    </div>
+</div>
