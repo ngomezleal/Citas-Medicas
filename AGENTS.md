@@ -68,4 +68,5 @@ changes.
     - fix/<description>
     - refactor/<description>
 - Realiza todos los commit en la nueva rama.
-- Nunca hagas push directo a `main`
+- Nunca hagas push directo a `main`.
+- Nunca hagas commit al menos que se te indique hacerlo de manera explicita.
