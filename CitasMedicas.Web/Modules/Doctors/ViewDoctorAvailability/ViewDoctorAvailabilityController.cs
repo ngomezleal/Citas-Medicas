@@ -11,6 +11,7 @@ public class ViewDoctorAvailabilityController(ViewDoctorAvailabilityService view
         var availability = await viewDoctorAvailabilityService.GetAsync(doctorId, selectedDate, cancellationToken);
         return availability is null ? NotFound() : View(new ViewDoctorAvailabilityViewModel
         {
+            DoctorId = doctorId,
             DoctorFullName = availability.DoctorFullName,
             SpecialtyName = availability.SpecialtyName,
             DoctorId = doctorId,

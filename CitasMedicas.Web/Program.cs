@@ -1,4 +1,5 @@
 using CitasMedicas.Web.Infrastructure.Persistence;
+using CitasMedicas.Web.Modules.Appointments.BookAppointment;
 using CitasMedicas.Web.Modules.Doctors.RegisterDoctor;
 using CitasMedicas.Web.Modules.Doctors.ConfigureAvailability;
 using CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability;

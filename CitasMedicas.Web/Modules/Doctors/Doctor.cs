@@ -1,5 +1,6 @@
 namespace CitasMedicas.Web.Modules.Doctors;
 
+using CitasMedicas.Web.Modules.Appointments;
 using CitasMedicas.Web.Modules.Specialties;
 using CitasMedicas.Web.Modules.Appointments;
 
