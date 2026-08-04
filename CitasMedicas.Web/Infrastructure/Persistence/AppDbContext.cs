@@ -1,6 +1,5 @@
 using CitasMedicas.Web.Modules.Appointments;
 using CitasMedicas.Web.Modules.Doctors;
-using CitasMedicas.Web.Modules.Appointments;
 using CitasMedicas.Web.Modules.Specialties;
 using Microsoft.EntityFrameworkCore;
 

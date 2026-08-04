@@ -14,7 +14,6 @@ public class ViewDoctorAvailabilityController(ViewDoctorAvailabilityService view
             DoctorId = doctorId,
             DoctorFullName = availability.DoctorFullName,
             SpecialtyName = availability.SpecialtyName,
-            DoctorId = doctorId,
             SelectedDate = selectedDate,
             Availabilities = availability.Availabilities
         });
