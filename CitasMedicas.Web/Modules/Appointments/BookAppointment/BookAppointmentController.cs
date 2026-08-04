@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CitasMedicas.Web.Modules.Appointments.BookAppointment;
@@ -15,19 +14,15 @@ public class BookAppointmentController(BookAppointmentService bookAppointmentSer
             return RedirectToAvailability(request);
         }
 
-        var response = await bookAppointmentService.BookAsync(request, cancellationToken);
-        if (response.Result == BookAppointmentResult.DoctorNotFound)
+        var result = await bookAppointmentService.BookAsync(request, cancellationToken);
+        if (result == BookAppointmentResult.DoctorNotFound)
+        {
             return NotFound();
-
-        if (response.Result == BookAppointmentResult.Booked && response.Confirmation is not null)
-        {
-            var confirmation = response.Confirmation;
-            var date = confirmation.Date.ToString("dddd, d 'de' MMMM 'de' yyyy", new CultureInfo("es-CO"));
-            TempData["BookingSuccess"] = $"Reserva confirmada con {confirmation.DoctorFullName} para el {date} de {confirmation.StartTime:HH\\:mm} a {confirmation.EndTime:HH\\:mm}.";
         }
-        else
+
+        if (result != BookAppointmentResult.Booked)
         {
-            TempData["BookingError"] = response.Result switch
+            TempData["BookingError"] = result switch
             {
                 BookAppointmentResult.InvalidPatientName => "El nombre del paciente es obligatorio.",
                 BookAppointmentResult.InvalidDate => "Solo se pueden reservar citas de lunes a viernes.",

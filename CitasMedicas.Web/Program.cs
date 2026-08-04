@@ -3,6 +3,7 @@ using CitasMedicas.Web.Modules.Appointments.BookAppointment;
 using CitasMedicas.Web.Modules.Doctors.RegisterDoctor;
 using CitasMedicas.Web.Modules.Doctors.ConfigureAvailability;
 using CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability;
+using CitasMedicas.Web.Modules.Appointments.BookAppointment;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

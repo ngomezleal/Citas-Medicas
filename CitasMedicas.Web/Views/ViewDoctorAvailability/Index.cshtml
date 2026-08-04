@@ -17,11 +17,6 @@
         <h1 class="h2">Horarios disponibles</h1>
         <p class="text-muted">@Model.DoctorFullName — @Model.SpecialtyName</p>
 
-        @if (TempData["BookingSuccess"] is string bookingSuccess)
-        {
-            <div class="alert alert-success" role="alert">@bookingSuccess</div>
-        }
-
         @if (TempData["BookingError"] is string bookingError)
         {
             <div class="alert alert-danger" role="alert">@bookingError</div>
@@ -68,6 +63,6 @@
             </form>
         }
 
-        <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary">Volver a la búsqueda</a>
+        <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary mt-3">Volver a la búsqueda</a>
     </div>
 </div>

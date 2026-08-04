@@ -18,14 +18,16 @@ public class ViewDoctorAvailabilityService(AppDbContext dbContext)
             return null;
         }
 
+        var bookedSchedules = await dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => appointment.DoctorId == doctorId && appointment.Date == date)
+            .Select(appointment => new { appointment.StartTime, appointment.EndTime })
+            .ToListAsync(cancellationToken);
+
         var availabilities = doctor.Availabilities
-            .Where(availability => availability.DayOfWeek is >= DayOfWeek.Monday and <= DayOfWeek.Friday)
-            .Where(availability => availability.DayOfWeek == date.DayOfWeek)
-            .Where(availability => !dbContext.Appointments.Any(appointment =>
-                appointment.DoctorId == doctorId &&
-                appointment.Date == date &&
-                appointment.StartTime == availability.StartTime &&
-                appointment.EndTime == availability.EndTime))
+            .Where(availability => availability.DayOfWeek == date.DayOfWeek &&
+                                  availability.DayOfWeek is >= DayOfWeek.Monday and <= DayOfWeek.Friday &&
+                                  !bookedSchedules.Any(booked => booked.StartTime == availability.StartTime && booked.EndTime == availability.EndTime))
             .OrderBy(availability => availability.DayOfWeek)
             .Select(availability => new AvailableSchedule(
                 availability.Id,

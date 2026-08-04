@@ -10,7 +10,7 @@ namespace CitasMedicas.Tests;
 public class ViewDoctorAvailabilityServiceTests
 {
     [Fact]
-    public async Task GetAsync_WithExistingDoctor_ReturnsWeekdayAvailabilitiesInDayOrder()
+    public async Task GetAsync_WithExistingDoctor_ReturnsSchedulesForSelectedWeekday()
     {
         await using var dbContext = CreateDbContext();
         var doctor = await AddDoctorAsync(dbContext);
@@ -51,28 +51,27 @@ public class ViewDoctorAvailabilityServiceTests
     }
 
     [Fact]
-    public async Task GetAsync_WithBookedSchedule_ExcludesTheBookedSchedule()
+    public async Task GetAsync_ExcludesBookedScheduleOnlyForTheSelectedDate()
     {
         await using var dbContext = CreateDbContext();
         var doctor = await AddDoctorAsync(dbContext);
-        dbContext.DoctorAvailabilities.AddRange(
-            Availability(doctor.Id, DayOfWeek.Monday, 8, 12),
-            Availability(doctor.Id, DayOfWeek.Monday, 13, 17));
-        await dbContext.SaveChangesAsync();
+        var date = new DateOnly(2026, 8, 3);
+        dbContext.DoctorAvailabilities.Add(Availability(doctor.Id, DayOfWeek.Monday, 8, 12));
         dbContext.Appointments.Add(new Appointment
         {
             DoctorId = doctor.Id,
-            PatientName = "Ana Perez",
-            Date = new DateOnly(2026, 8, 3),
+            PatientName = "Paciente Uno",
+            Date = date,
             StartTime = new TimeOnly(8, 0),
             EndTime = new TimeOnly(12, 0)
         });
         await dbContext.SaveChangesAsync();
 
-        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, new DateOnly(2026, 8, 3), CancellationToken.None);
+        var bookedDate = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, date, CancellationToken.None);
+        var nextMonday = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, date.AddDays(7), CancellationToken.None);
 
-        var availability = Assert.Single(result!.Availabilities);
-        Assert.Equal(new TimeOnly(13, 0), availability.StartTime);
+        Assert.Empty(bookedDate!.Availabilities);
+        Assert.Single(nextMonday!.Availabilities);
     }
 
     private static DoctorAvailability Availability(int doctorId, DayOfWeek dayOfWeek, int startHour, int endHour) => new()

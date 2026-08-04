@@ -5,36 +5,49 @@ namespace CitasMedicas.Web.Modules.Appointments.BookAppointment;
 
 public class BookAppointmentService(AppDbContext dbContext)
 {
-    public async Task<BookAppointmentResponse> BookAsync(BookAppointmentRequest request, CancellationToken cancellationToken)
+    public async Task<BookAppointmentResult> BookAsync(BookAppointmentRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.PatientName))
-            return new(BookAppointmentResult.InvalidPatientName);
+        {
+            return BookAppointmentResult.InvalidPatientName;
+        }
 
         if (request.Date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            return new(BookAppointmentResult.InvalidDate);
+        {
+            return BookAppointmentResult.InvalidDate;
+        }
 
-        var doctor = await dbContext.Doctors.SingleOrDefaultAsync(doctor => doctor.Id == request.DoctorId, cancellationToken);
-        if (doctor is null)
-            return new(BookAppointmentResult.DoctorNotFound);
+        if (!await dbContext.Doctors.AnyAsync(doctor => doctor.Id == request.DoctorId, cancellationToken))
+        {
+            return BookAppointmentResult.DoctorNotFound;
+        }
 
         var availability = await dbContext.DoctorAvailabilities.SingleOrDefaultAsync(availability =>
             availability.Id == request.DoctorAvailabilityId &&
             availability.DoctorId == request.DoctorId &&
             availability.DayOfWeek == request.Date.DayOfWeek,
             cancellationToken);
+
         if (availability is null)
-            return new(BookAppointmentResult.ScheduleUnavailable);
+        {
+            return BookAppointmentResult.ScheduleUnavailable;
+        }
 
         var alreadyBooked = await dbContext.Appointments.AnyAsync(appointment =>
-            appointment.DoctorId == request.DoctorId && appointment.Date == request.Date &&
-            appointment.StartTime == availability.StartTime && appointment.EndTime == availability.EndTime,
+            appointment.DoctorId == request.DoctorId &&
+            appointment.Date == request.Date &&
+            appointment.StartTime == availability.StartTime &&
+            appointment.EndTime == availability.EndTime,
             cancellationToken);
+
         if (alreadyBooked)
-            return new(BookAppointmentResult.ScheduleAlreadyBooked);
+        {
+            return BookAppointmentResult.ScheduleAlreadyBooked;
+        }
 
         dbContext.Appointments.Add(new Appointment
         {
-            DoctorId = doctor.Id,
+            DoctorId = request.DoctorId,
             PatientName = request.PatientName.Trim(),
             Date = request.Date,
             StartTime = availability.StartTime,
@@ -44,17 +57,14 @@ public class BookAppointmentService(AppDbContext dbContext)
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
-            return new(BookAppointmentResult.Booked, new BookingConfirmation(doctor.FullName, request.Date, availability.StartTime, availability.EndTime));
+            return BookAppointmentResult.Booked;
         }
         catch (DbUpdateException)
         {
-            return new(BookAppointmentResult.ScheduleAlreadyBooked);
+            return BookAppointmentResult.ScheduleAlreadyBooked;
         }
     }
 }
-
-public record BookAppointmentResponse(BookAppointmentResult Result, BookingConfirmation? Confirmation = null);
-public record BookingConfirmation(string DoctorFullName, DateOnly Date, TimeOnly StartTime, TimeOnly EndTime);
 
 public enum BookAppointmentResult
 {

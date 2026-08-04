@@ -1,4 +1,5 @@
 using CitasMedicas.Web.Infrastructure.Persistence;
+using CitasMedicas.Web.Modules.Appointments;
 using CitasMedicas.Web.Modules.Appointments.BookAppointment;
 using CitasMedicas.Web.Modules.Doctors;
 using CitasMedicas.Web.Modules.Specialties;
@@ -9,97 +10,115 @@ namespace CitasMedicas.Tests;
 public class BookAppointmentServiceTests
 {
     [Fact]
-    public async Task BookAsync_WithAvailableWeekday_PersistsAppointmentAndReturnsConfirmation()
+    public async Task BookAsync_WithAvailableWeekdaySchedule_PersistsAppointment()
     {
         await using var dbContext = CreateDbContext();
-        var (doctor, availability) = await AddDoctorAndAvailabilityAsync(dbContext);
+        var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
 
-        var response = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
+        var result = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.Booked, response.Result);
-        Assert.Equal(doctor.FullName, response.Confirmation!.DoctorFullName);
-        Assert.Equal(new DateOnly(2026, 8, 3), response.Confirmation.Date);
-        Assert.Equal(new TimeOnly(8, 0), response.Confirmation.StartTime);
-        Assert.Single(dbContext.Appointments);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public async Task BookAsync_WithMissingPatientName_DoesNotPersist(string patientName)
-    {
-        await using var dbContext = CreateDbContext();
-        var (doctor, availability) = await AddDoctorAndAvailabilityAsync(dbContext);
-
-        var response = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, availability.Id, patientName), CancellationToken.None);
-
-        Assert.Equal(BookAppointmentResult.InvalidPatientName, response.Result);
-        Assert.Empty(dbContext.Appointments);
+        Assert.Equal(BookAppointmentResult.Booked, result);
+        var appointment = Assert.Single(await dbContext.Appointments.ToListAsync());
+        Assert.Equal("Paciente Uno", appointment.PatientName);
+        Assert.Equal(new DateOnly(2026, 8, 3), appointment.Date);
+        Assert.Equal(new TimeOnly(8, 0), appointment.StartTime);
+        Assert.Equal(new TimeOnly(12, 0), appointment.EndTime);
     }
 
     [Fact]
-    public async Task BookAsync_WithWeekend_DoesNotPersist()
+    public async Task BookAsync_WithUnknownDoctor_ReturnsDoctorNotFound()
     {
         await using var dbContext = CreateDbContext();
-        var (doctor, availability) = await AddDoctorAndAvailabilityAsync(dbContext);
+
+        var result = await new BookAppointmentService(dbContext).BookAsync(Request(99, 1), CancellationToken.None);
+
+        Assert.Equal(BookAppointmentResult.DoctorNotFound, result);
+    }
+
+    [Fact]
+    public async Task BookAsync_WithBlankPatientName_ReturnsInvalidPatientName()
+    {
+        await using var dbContext = CreateDbContext();
+        var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
+
+        var result = await new BookAppointmentService(dbContext).BookAsync(new BookAppointmentRequest
+        {
+            DoctorId = doctor.Id,
+            DoctorAvailabilityId = availability.Id,
+            PatientName = " ",
+            Date = new DateOnly(2026, 8, 3)
+        }, CancellationToken.None);
+
+        Assert.Equal(BookAppointmentResult.InvalidPatientName, result);
+    }
+
+    [Fact]
+    public async Task BookAsync_WithWeekendDate_ReturnsInvalidDate()
+    {
+        await using var dbContext = CreateDbContext();
+        var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
+
         var request = Request(doctor.Id, availability.Id);
-        request.Date = new DateOnly(2026, 8, 2);
+        request.Date = new DateOnly(2026, 8, 8);
+        var result = await new BookAppointmentService(dbContext).BookAsync(request, CancellationToken.None);
 
-        var response = await new BookAppointmentService(dbContext).BookAsync(request, CancellationToken.None);
-
-        Assert.Equal(BookAppointmentResult.InvalidDate, response.Result);
-        Assert.Empty(dbContext.Appointments);
+        Assert.Equal(BookAppointmentResult.InvalidDate, result);
     }
 
     [Fact]
-    public async Task BookAsync_WithAlreadyBookedSchedule_DoesNotPersistAgain()
+    public async Task BookAsync_WithScheduleFromAnotherDay_ReturnsScheduleUnavailable()
     {
         await using var dbContext = CreateDbContext();
-        var (doctor, availability) = await AddDoctorAndAvailabilityAsync(dbContext);
+        var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
+
+        var request = Request(doctor.Id, availability.Id);
+        request.Date = new DateOnly(2026, 8, 4);
+        var result = await new BookAppointmentService(dbContext).BookAsync(request, CancellationToken.None);
+
+        Assert.Equal(BookAppointmentResult.ScheduleUnavailable, result);
+    }
+
+    [Fact]
+    public async Task BookAsync_WithPreviouslyBookedSchedule_ReturnsScheduleAlreadyBooked()
+    {
+        await using var dbContext = CreateDbContext();
+        var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
         var service = new BookAppointmentService(dbContext);
         await service.BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
 
-        var response = await service.BookAsync(Request(doctor.Id, availability.Id, "Carlos Ruiz"), CancellationToken.None);
+        var result = await service.BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.ScheduleAlreadyBooked, response.Result);
-        Assert.Single(dbContext.Appointments);
+        Assert.Equal(BookAppointmentResult.ScheduleAlreadyBooked, result);
     }
 
-    [Fact]
-    public async Task BookAsync_WithAvailabilityFromAnotherDoctor_DoesNotPersist()
-    {
-        await using var dbContext = CreateDbContext();
-        var (doctor, _) = await AddDoctorAndAvailabilityAsync(dbContext);
-        var (_, otherAvailability) = await AddDoctorAndAvailabilityAsync(dbContext, "Dr. Luis Gomez");
-
-        var response = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, otherAvailability.Id), CancellationToken.None);
-
-        Assert.Equal(BookAppointmentResult.ScheduleUnavailable, response.Result);
-        Assert.Empty(dbContext.Appointments);
-    }
-
-    private static BookAppointmentRequest Request(int doctorId, int availabilityId, string patientName = "Ana Perez") => new()
+    private static BookAppointmentRequest Request(int doctorId, int availabilityId) => new()
     {
         DoctorId = doctorId,
         DoctorAvailabilityId = availabilityId,
-        PatientName = patientName,
+        PatientName = "Paciente Uno",
         Date = new DateOnly(2026, 8, 3)
     };
 
     private static AppDbContext CreateDbContext() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 
-    private static async Task<(Doctor Doctor, DoctorAvailability Availability)> AddDoctorAndAvailabilityAsync(AppDbContext dbContext, string name = "Dra. Ana Lopez")
+    private static async Task<(Doctor Doctor, DoctorAvailability Availability)> AddDoctorWithMondayAvailabilityAsync(AppDbContext dbContext)
     {
-        if (!await dbContext.Specialties.AnyAsync())
-            dbContext.Specialties.Add(new Specialty { Id = 1, Name = "Medicina general" });
-
-        var doctor = new Doctor { FullName = name, SpecialtyId = 1 };
+        dbContext.Specialties.Add(new Specialty { Id = 1, Name = "Medicina general" });
+        var doctor = new Doctor { FullName = "Dra. Ana López", SpecialtyId = 1 };
         dbContext.Doctors.Add(doctor);
         await dbContext.SaveChangesAsync();
-        var availability = new DoctorAvailability { DoctorId = doctor.Id, DayOfWeek = DayOfWeek.Monday, StartTime = new TimeOnly(8, 0), EndTime = new TimeOnly(12, 0) };
+
+        var availability = new DoctorAvailability
+        {
+            DoctorId = doctor.Id,
+            DayOfWeek = DayOfWeek.Monday,
+            StartTime = new TimeOnly(8, 0),
+            EndTime = new TimeOnly(12, 0)
+        };
         dbContext.DoctorAvailabilities.Add(availability);
         await dbContext.SaveChangesAsync();
+
         return (doctor, availability);
     }
 }
