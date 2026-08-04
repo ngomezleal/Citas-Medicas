@@ -1,5 +1,6 @@
 using CitasMedicas.Web.Infrastructure.Persistence;
 using CitasMedicas.Web.Modules.Appointments.BookAppointment;
+using CitasMedicas.Web.Modules.Appointments.ViewAppointments;
 using CitasMedicas.Web.Modules.Doctors.RegisterDoctor;
 using CitasMedicas.Web.Modules.Doctors.ConfigureAvailability;
 using CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability;
@@ -15,6 +16,7 @@ builder.Services.AddScoped<RegisterDoctorService>();
 builder.Services.AddScoped<ConfigureAvailabilityService>();
 builder.Services.AddScoped<ViewDoctorAvailabilityService>();
 builder.Services.AddScoped<BookAppointmentService>();
+builder.Services.AddScoped<ViewAppointmentsService>();
 
 var app = builder.Build();
 
