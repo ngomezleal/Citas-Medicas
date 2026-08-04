@@ -10,14 +10,19 @@ namespace CitasMedicas.Tests;
 public class BookAppointmentServiceTests
 {
     [Fact]
-    public async Task BookAsync_WithAvailableWeekdaySchedule_PersistsAppointment()
+    public async Task BookAsync_WithAvailableWeekdaySchedule_PersistsAppointmentAndReturnsConfirmation()
     {
         await using var dbContext = CreateDbContext();
         var (doctor, availability) = await AddDoctorWithMondayAvailabilityAsync(dbContext);
 
-        var result = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
+        var response = await new BookAppointmentService(dbContext).BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.Booked, result);
+        Assert.Equal(BookAppointmentResult.Booked, response.Result);
+        Assert.NotNull(response.Confirmation);
+        Assert.Equal(doctor.FullName, response.Confirmation.DoctorFullName);
+        Assert.Equal(new DateOnly(2026, 8, 3), response.Confirmation.Date);
+        Assert.Equal(new TimeOnly(8, 0), response.Confirmation.StartTime);
+        Assert.Equal(new TimeOnly(12, 0), response.Confirmation.EndTime);
         var appointment = Assert.Single(await dbContext.Appointments.ToListAsync());
         Assert.Equal("Paciente Uno", appointment.PatientName);
         Assert.Equal(new DateOnly(2026, 8, 3), appointment.Date);
@@ -32,7 +37,8 @@ public class BookAppointmentServiceTests
 
         var result = await new BookAppointmentService(dbContext).BookAsync(Request(99, 1), CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.DoctorNotFound, result);
+        Assert.Equal(BookAppointmentResult.DoctorNotFound, result.Result);
+        Assert.Null(result.Confirmation);
     }
 
     [Fact]
@@ -49,7 +55,8 @@ public class BookAppointmentServiceTests
             Date = new DateOnly(2026, 8, 3)
         }, CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.InvalidPatientName, result);
+        Assert.Equal(BookAppointmentResult.InvalidPatientName, result.Result);
+        Assert.Null(result.Confirmation);
     }
 
     [Fact]
@@ -62,7 +69,8 @@ public class BookAppointmentServiceTests
         request.Date = new DateOnly(2026, 8, 8);
         var result = await new BookAppointmentService(dbContext).BookAsync(request, CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.InvalidDate, result);
+        Assert.Equal(BookAppointmentResult.InvalidDate, result.Result);
+        Assert.Null(result.Confirmation);
     }
 
     [Fact]
@@ -75,7 +83,8 @@ public class BookAppointmentServiceTests
         request.Date = new DateOnly(2026, 8, 4);
         var result = await new BookAppointmentService(dbContext).BookAsync(request, CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.ScheduleUnavailable, result);
+        Assert.Equal(BookAppointmentResult.ScheduleUnavailable, result.Result);
+        Assert.Null(result.Confirmation);
     }
 
     [Fact]
@@ -88,7 +97,8 @@ public class BookAppointmentServiceTests
 
         var result = await service.BookAsync(Request(doctor.Id, availability.Id), CancellationToken.None);
 
-        Assert.Equal(BookAppointmentResult.ScheduleAlreadyBooked, result);
+        Assert.Equal(BookAppointmentResult.ScheduleAlreadyBooked, result.Result);
+        Assert.Null(result.Confirmation);
     }
 
     private static BookAppointmentRequest Request(int doctorId, int availabilityId) => new()
