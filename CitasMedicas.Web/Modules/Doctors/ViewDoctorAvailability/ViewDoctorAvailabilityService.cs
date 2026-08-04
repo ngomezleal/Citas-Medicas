@@ -5,7 +5,7 @@ namespace CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability;
 
 public class ViewDoctorAvailabilityService(AppDbContext dbContext)
 {
-    public async Task<ViewDoctorAvailabilityResult?> GetAsync(int doctorId, CancellationToken cancellationToken)
+    public async Task<ViewDoctorAvailabilityResult?> GetAsync(int doctorId, DateOnly date, CancellationToken cancellationToken)
     {
         var doctor = await dbContext.Doctors
             .AsNoTracking()
@@ -18,10 +18,19 @@ public class ViewDoctorAvailabilityService(AppDbContext dbContext)
             return null;
         }
 
+        var bookedSchedules = await dbContext.Appointments
+            .AsNoTracking()
+            .Where(appointment => appointment.DoctorId == doctorId && appointment.Date == date)
+            .Select(appointment => new { appointment.StartTime, appointment.EndTime })
+            .ToListAsync(cancellationToken);
+
         var availabilities = doctor.Availabilities
-            .Where(availability => availability.DayOfWeek is >= DayOfWeek.Monday and <= DayOfWeek.Friday)
+            .Where(availability => availability.DayOfWeek == date.DayOfWeek &&
+                                  availability.DayOfWeek is >= DayOfWeek.Monday and <= DayOfWeek.Friday &&
+                                  !bookedSchedules.Any(booked => booked.StartTime == availability.StartTime && booked.EndTime == availability.EndTime))
             .OrderBy(availability => availability.DayOfWeek)
             .Select(availability => new AvailableSchedule(
+                availability.Id,
                 availability.DayOfWeek,
                 availability.StartTime,
                 availability.EndTime))
@@ -36,4 +45,4 @@ public record ViewDoctorAvailabilityResult(
     string SpecialtyName,
     IReadOnlyList<AvailableSchedule> Availabilities);
 
-public record AvailableSchedule(DayOfWeek DayOfWeek, TimeOnly StartTime, TimeOnly EndTime);
+public record AvailableSchedule(int Id, DayOfWeek DayOfWeek, TimeOnly StartTime, TimeOnly EndTime);

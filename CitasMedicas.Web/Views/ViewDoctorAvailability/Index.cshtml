@@ -17,35 +17,52 @@
         <h1 class="h2">Horarios disponibles</h1>
         <p class="text-muted">@Model.DoctorFullName — @Model.SpecialtyName</p>
 
-        @if (Model.Availabilities.Count == 0)
+        @if (TempData["BookingError"] is string bookingError)
         {
-            <p class="text-muted">Este médico no tiene horarios disponibles configurados.</p>
+            <div class="alert alert-danger" role="alert">@bookingError</div>
+        }
+
+        <form method="get" class="row g-3 mb-4">
+            <input type="hidden" name="doctorId" value="@Model.DoctorId" />
+            <div class="col-sm-5">
+                <label for="date" class="form-label">Fecha de la cita</label>
+                <input id="date" name="date" type="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control" required />
+            </div>
+            <div class="col-sm-3 align-self-end">
+                <button type="submit" class="btn btn-outline-primary">Consultar</button>
+            </div>
+        </form>
+
+        @if (Model.SelectedDate.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        {
+            <p class="text-muted">Solo se pueden consultar y reservar horarios de lunes a viernes.</p>
+        }
+        else if (Model.Availabilities.Count == 0)
+        {
+            <p class="text-muted">Este médico no tiene horarios disponibles para la fecha seleccionada.</p>
         }
         else
         {
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr>
-                            <th>Día</th>
-                            <th>Hora de inicio</th>
-                            <th>Hora de fin</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <form asp-controller="BookAppointment" asp-action="Create" method="post" class="card card-body">
+                <input type="hidden" name="DoctorId" value="@Model.DoctorId" />
+                <input type="hidden" name="Date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+                <div class="mb-3">
+                    <label for="patientName" class="form-label">Nombre del paciente</label>
+                    <input id="patientName" name="PatientName" class="form-control" maxlength="200" required />
+                </div>
+                <div class="mb-3">
+                    <label for="doctorAvailabilityId" class="form-label">Horario disponible</label>
+                    <select id="doctorAvailabilityId" name="DoctorAvailabilityId" class="form-select" required>
                         @foreach (var availability in Model.Availabilities)
                         {
-                            <tr>
-                                <td>@dayNames[availability.DayOfWeek]</td>
-                                <td>@availability.StartTime.ToString("HH:mm")</td>
-                                <td>@availability.EndTime.ToString("HH:mm")</td>
-                            </tr>
+                            <option value="@availability.Id">@dayNames[availability.DayOfWeek] @availability.StartTime.ToString("HH:mm") - @availability.EndTime.ToString("HH:mm")</option>
                         }
-                    </tbody>
-                </table>
-            </div>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary align-self-start">Confirmar reserva</button>
+            </form>
         }
 
-        <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary">Volver a la búsqueda</a>
+        <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary mt-3">Volver a la búsqueda</a>
     </div>
 </div>
