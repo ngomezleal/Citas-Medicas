@@ -1,6 +1,7 @@
 namespace CitasMedicas.Web.Modules.Doctors;
 
 using CitasMedicas.Web.Modules.Specialties;
+using CitasMedicas.Web.Modules.Appointments;
 
 public class Doctor
 {
@@ -13,4 +14,6 @@ public class Doctor
     public Specialty Specialty { get; set; } = null!;
 
     public ICollection<DoctorAvailability> Availabilities { get; set; } = [];
+
+    public ICollection<Appointment> Appointments { get; set; } = [];
 }
