@@ -1,0 +1,42 @@
+@model CitasMedicas.Web.Modules.Appointments.ViewAppointments.ViewAppointmentsViewModel
+
+@{
+    ViewData["Title"] = "Citas programadas";
+}
+
+<div class="row">
+    <div class="col-lg-10">
+        <h1 class="h2">Citas programadas</h1>
+
+        @if (Model.Appointments.Count == 0)
+        {
+            <p class="text-muted">No hay citas programadas.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">Paciente</th>
+                            <th scope="col">Médico</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Horario</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var appointment in Model.Appointments)
+                        {
+                            <tr>
+                                <td>@appointment.PatientName</td>
+                                <td>@appointment.DoctorFullName</td>
+                                <td>@appointment.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@appointment.StartTime.ToString("HH:mm") - @appointment.EndTime.ToString("HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
