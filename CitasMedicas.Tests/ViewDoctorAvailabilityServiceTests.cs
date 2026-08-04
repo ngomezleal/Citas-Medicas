@@ -1,4 +1,5 @@
 using CitasMedicas.Web.Infrastructure.Persistence;
+using CitasMedicas.Web.Modules.Appointments;
 using CitasMedicas.Web.Modules.Doctors;
 using CitasMedicas.Web.Modules.Doctors.ViewDoctorAvailability;
 using CitasMedicas.Web.Modules.Specialties;
@@ -19,13 +20,12 @@ public class ViewDoctorAvailabilityServiceTests
             Availability(doctor.Id, DayOfWeek.Saturday, 9, 11));
         await dbContext.SaveChangesAsync();
 
-        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, CancellationToken.None);
+        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, new DateOnly(2026, 8, 3), CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.Equal("Dra. Ana López", result.DoctorFullName);
-        Assert.Collection(result.Availabilities,
-            availability => Assert.Equal(DayOfWeek.Monday, availability.DayOfWeek),
-            availability => Assert.Equal(DayOfWeek.Friday, availability.DayOfWeek));
+        var availability = Assert.Single(result.Availabilities);
+        Assert.Equal(DayOfWeek.Monday, availability.DayOfWeek);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class ViewDoctorAvailabilityServiceTests
     {
         await using var dbContext = CreateDbContext();
 
-        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(99, CancellationToken.None);
+        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(99, new DateOnly(2026, 8, 3), CancellationToken.None);
 
         Assert.Null(result);
     }
@@ -44,10 +44,35 @@ public class ViewDoctorAvailabilityServiceTests
         await using var dbContext = CreateDbContext();
         var doctor = await AddDoctorAsync(dbContext);
 
-        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, CancellationToken.None);
+        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, new DateOnly(2026, 8, 3), CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.Empty(result.Availabilities);
+    }
+
+    [Fact]
+    public async Task GetAsync_WithBookedSchedule_ExcludesTheBookedSchedule()
+    {
+        await using var dbContext = CreateDbContext();
+        var doctor = await AddDoctorAsync(dbContext);
+        dbContext.DoctorAvailabilities.AddRange(
+            Availability(doctor.Id, DayOfWeek.Monday, 8, 12),
+            Availability(doctor.Id, DayOfWeek.Monday, 13, 17));
+        await dbContext.SaveChangesAsync();
+        dbContext.Appointments.Add(new Appointment
+        {
+            DoctorId = doctor.Id,
+            PatientName = "Ana Perez",
+            Date = new DateOnly(2026, 8, 3),
+            StartTime = new TimeOnly(8, 0),
+            EndTime = new TimeOnly(12, 0)
+        });
+        await dbContext.SaveChangesAsync();
+
+        var result = await new ViewDoctorAvailabilityService(dbContext).GetAsync(doctor.Id, new DateOnly(2026, 8, 3), CancellationToken.None);
+
+        var availability = Assert.Single(result!.Availabilities);
+        Assert.Equal(new TimeOnly(13, 0), availability.StartTime);
     }
 
     private static DoctorAvailability Availability(int doctorId, DayOfWeek dayOfWeek, int startHour, int endHour) => new()
