@@ -27,22 +27,25 @@
             <div class="alert alert-danger" role="alert">@bookingError</div>
         }
 
-        <form method="get" class="row g-3 mb-4">
+        @if (TempData["DateWarning"] is string dateWarning)
+        {
+            <div class="alert alert-warning" role="alert">@dateWarning</div>
+        }
+
+        <form id="availability-form" method="get" class="row g-3 mb-4">
             <input type="hidden" name="doctorId" value="@Model.DoctorId" />
             <div class="col-sm-5">
                 <label for="date" class="form-label">Fecha de la cita</label>
-                <input id="date" name="date" type="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control" required />
+                <input id="date" name="date" type="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" class="form-control" aria-describedby="date-help date-error" required />
+                <div id="date-help" class="form-text">Las citas se reservan de lunes a viernes.</div>
+                <div id="date-error" class="invalid-feedback" role="alert">Selecciona una fecha de lunes a viernes.</div>
             </div>
             <div class="col-sm-3 align-self-end">
-                <button type="submit" class="btn btn-outline-primary">Consultar</button>
+                <button id="consult-button" type="submit" class="btn btn-outline-primary">Consultar</button>
             </div>
         </form>
 
-        @if (Model.SelectedDate.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-        {
-            <p class="text-muted">Solo se pueden consultar y reservar horarios de lunes a viernes.</p>
-        }
-        else if (Model.Availabilities.Count == 0)
+        @if (Model.Availabilities.Count == 0)
         {
             <p class="text-muted">Este médico no tiene horarios disponibles para la fecha seleccionada.</p>
         }
@@ -71,3 +74,25 @@
         <a asp-controller="SearchDoctorsBySpecialty" asp-action="Index" class="btn btn-outline-secondary mt-3">Volver a la búsqueda</a>
     </div>
 </div>
+
+@section Scripts
+{
+    <script>
+        (() => {
+            const dateInput = document.getElementById("date");
+            const consultButton = document.getElementById("consult-button");
+
+            const updateDateValidity = () => {
+                const selectedDate = new Date(`${dateInput.value}T00:00:00`);
+                const isWeekend = !Number.isNaN(selectedDate.valueOf()) && [0, 6].includes(selectedDate.getDay());
+
+                dateInput.classList.toggle("is-invalid", isWeekend);
+                consultButton.disabled = isWeekend;
+                dateInput.setCustomValidity(isWeekend ? "Selecciona una fecha de lunes a viernes." : "");
+            };
+
+            dateInput.addEventListener("input", updateDateValidity);
+            updateDateValidity();
+        })();
+    </script>
+}

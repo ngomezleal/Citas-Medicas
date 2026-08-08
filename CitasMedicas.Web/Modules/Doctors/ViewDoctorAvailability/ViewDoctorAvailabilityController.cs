@@ -8,6 +8,13 @@ public class ViewDoctorAvailabilityController(ViewDoctorAvailabilityService view
     public async Task<IActionResult> Index(int doctorId, DateOnly? date, CancellationToken cancellationToken)
     {
         var selectedDate = date ?? NextWeekday(DateOnly.FromDateTime(DateTime.Today));
+
+        if (selectedDate.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+        {
+            TempData["DateWarning"] = "Las citas se reservan de lunes a viernes. Se seleccionó el próximo día hábil.";
+            return RedirectToAction(nameof(Index), new { doctorId, date = NextWeekday(selectedDate) });
+        }
+
         var availability = await viewDoctorAvailabilityService.GetAsync(doctorId, selectedDate, cancellationToken);
         return availability is null ? NotFound() : View(new ViewDoctorAvailabilityViewModel
         {
